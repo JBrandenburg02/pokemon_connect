@@ -57,8 +57,6 @@ type_relabel <- function(df){
 }
 ```
 
-
-
 ```{r}
 #| label: selection_input
 #| panel: sidebar
@@ -88,7 +86,6 @@ tableOutput("poke2_type_tbl")
 tableOutput("poke1_stat_tbl")
 tableOutput("poke2_stat_tbl")
 ```
-
 
 ```{r}
 #| label: set-images
@@ -171,5 +168,3 @@ output$poke2_stat_tbl <- renderTable({
 
   
 ```
-
-
