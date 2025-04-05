@@ -1,0 +1,175 @@
+---
+title: "Pokemon"
+subtitle: 'Pick your Pokemon and "Battle" to be the best!'
+format: html
+server: shiny
+---
+
+```{r}
+#| context: setup
+#| label: load-packages
+#| include: false
+library(tidyverse)
+library(shiny)
+library(rmarkdown)
+library(R.utils)
+library(gt)
+```
+
+```{r}
+#| context: data
+#| label: load-data
+#| include: false
+
+df_pokemon <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-04-01/pokemon_df.csv')
+df_pokemon <- df_pokemon[1:151,]
+
+df_pokemon <- df_pokemon |> 
+  mutate(
+      across(c(pokemon, type_1, type_2), capitalize)
+  )
+
+stat_labels <- c(
+  height = "Height",
+  weight = "Weight",
+  base_experience = "Base Experience",
+  hp = "HP",
+  attack = "Attack",
+  defense = "Defense",
+  special_attack = "Special Attack",
+  special_defense = "Special Defense",
+  speed = "Speed"
+)
+
+type_labels <- c(
+  type_1 = "Primary Type",
+  type_2 = "Secondary Type"
+)
+
+stat_relabel <- function(df){
+  df |> 
+    rename(!!!setNames(names(stat_labels), stat_labels))
+}
+
+type_relabel <- function(df){
+  df |> 
+    rename(!!!setNames(names(type_labels), type_labels))
+}
+```
+
+
+
+```{r}
+#| label: selection_input
+#| panel: sidebar
+#| layout-ncol: 2
+
+choose_poke <- capitalize(df_pokemon$pokemon)
+
+selectInput("poke1", "I Choose You!", choices = choose_poke, selected = sample(choose_poke, 1))
+#uiOutput("poke1_image")
+
+
+
+selectInput("poke2", "And I Choose You!", choices = choose_poke, selected = sample(choose_poke, 1))
+#uiOutput("poke2_image")
+#tableOutput("poke2_tbl")
+
+
+uiOutput("poke_images")
+
+```
+
+```{r}
+#| layout-ncol: 2
+#| layout-nrow: 2
+tableOutput("poke1_type_tbl")
+tableOutput("poke2_type_tbl")
+tableOutput("poke1_stat_tbl")
+tableOutput("poke2_stat_tbl")
+```
+
+
+```{r}
+#| label: set-images
+#| context: server
+#| layout-ncol: 2
+#| out.width: "25%"
+
+output$poke_images <- renderUI({
+
+pick1 <- df_pokemon |>
+filter(pokemon == input$poke1) |>
+pull(url_image)
+
+pick2 <- df_pokemon |>
+filter(pokemon == input$poke2) |>
+pull(url_image)
+
+div(style = "display: flex; gap: 20px;",
+tags$img(src = pick1),
+tags$img(src = pick2)
+)
+
+})
+
+
+
+```
+
+```{r}
+#| label: set-tables
+#| context: server
+#| layout-ncol: 2
+
+
+output$poke1_type_tbl <- renderTable({
+   
+  tbl1_type <- df_pokemon |> 
+   filter(pokemon== input$poke1) |> 
+   select(type_1, type_2) |>
+    type_relabel() |> 
+       pivot_longer(cols = everything(), names_to = "Type", values_to = "Value") |>
+ gt() |> 
+tab_header(title = "Pokemon Type Info")
+ })
+
+output$poke2_type_tbl <- renderTable({
+   
+  tbl2_type <- df_pokemon |> 
+   filter(pokemon== input$poke2) |> 
+   select(type_1, type_2) |> 
+    type_relabel() |> 
+   pivot_longer(cols = everything(), names_to = "Type", values_to = "Value") |> 
+  gt() |> 
+tab_header(title = "Pokemon Type Info")
+ })
+
+output$poke1_stat_tbl <- renderTable({
+   tbl1_stat <- df_pokemon |> 
+     filter(pokemon == input$poke1) |> 
+     select(c(height, weight, base_experience, hp, attack, defense, special_attack, special_defense, speed)) |> 
+  stat_relabel() |> 
+     pivot_longer(cols = everything(), names_to = "Stat", values_to = "Value") |> 
+   gt() |> 
+ tab_header(title = "Stat Info")
+
+ })
+
+
+
+output$poke2_stat_tbl <- renderTable({
+   tbl2_stat <- df_pokemon |> 
+     filter(pokemon == input$poke2) |> 
+     select(c(height, weight, base_experience, hp, attack, defense, special_attack, special_defense, speed)) |> 
+     stat_relabel() |> 
+     pivot_longer(cols = everything(), names_to = "Stat", values_to = "Value") |> 
+   gt() |> 
+ tab_header(title = "Stat Info")
+
+ })
+
+  
+```
+
+
